@@ -5,13 +5,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/virtual-kubelet/virtual-kubelet/manager"
 	"github.com/virtual-kubelet/virtual-kubelet/providers/azure"
+	"github.com/virtual-kubelet/virtual-kubelet/providers/ecs"
 	"github.com/virtual-kubelet/virtual-kubelet/providers/hypersh"
 	"github.com/virtual-kubelet/virtual-kubelet/providers/mock"
 	"github.com/virtual-kubelet/virtual-kubelet/providers/web"
@@ -95,6 +95,11 @@ func New(nodeName, operatingSystem, namespace, kubeConfig, taint, provider, prov
 		if err != nil {
 			return nil, err
 		}
+	case "ecs":
+		p, err = ecs.NewECSProvider(providerConfig, rm, nodeName, operatingSystem)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		fmt.Printf("Provider '%s' is not supported\n", provider)
 	}
@@ -143,6 +148,8 @@ func (s *Server) registerNode() error {
 				"type":                  "virtual-kubelet",
 				"kubernetes.io/role":    "agent",
 				"beta.kubernetes.io/os": strings.ToLower(s.provider.OperatingSystem()),
+			},
+			Annotations: map[string]string{
 				"alpha.service-controller.kubernetes.io/exclude-balancer": "true",
 			},
 		},
